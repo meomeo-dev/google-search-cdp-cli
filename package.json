@@ -1,6 +1,6 @@
 {
   "name": "google-search-cdp-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "CLI for Google advanced search and page fetch through a local Chrome CDP session.",
   "license": "MIT",

@@ -19,8 +19,10 @@ function runCliHelp(args: string[]): string {
 test('top-level help is task-oriented', () => {
   const output = runCliHelp(['--help'])
 
+  assert.match(output, /install-completion <shell>/)
   assert.match(output, /Common Workflows:/)
   assert.match(output, /google-search-cdp-cli search \.\.\./)
+  assert.match(output, /google-search-cdp-cli install-completion zsh/)
   assert.match(output, /Start Here:/)
 })
 
@@ -35,6 +37,7 @@ test('search help groups options by user task', () => {
   assert.match(output, /Browser Session:/)
   assert.match(output, /--headless/)
   assert.match(output, /--proxy/)
+  assert.match(output, /--dry-run/)
   assert.match(output, /Recommended Model:/)
   assert.match(output, /Examples:/)
 })
@@ -46,5 +49,6 @@ test('fetch help groups options and includes examples', () => {
   assert.match(output, /Browser Session:/)
   assert.match(output, /--headless/)
   assert.match(output, /--proxy/)
+  assert.match(output, /--dry-run/)
   assert.match(output, /Examples:/)
 })

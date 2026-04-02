@@ -2,19 +2,39 @@
 
 import { basename } from 'node:path'
 import { Command, Option } from 'commander'
-import { searchGoogleViaCdp } from './google/search.js'
+import {
+  formatCompletionResponse,
+  installZshCompletion,
+  resolveCompletion,
+} from './completion.js'
+import {
+  previewSearchGoogle,
+  searchGoogleViaCdp,
+  type SearchGoogleInput,
+} from './google/search.js'
 import { hasStructuredQuerySyntax, parseStructuredQueryArgv } from './google/cliStructuredQuery.js'
 import type { GoogleQueryInput } from './google/queryBuilder.js'
-import { withManagedChromeIfNeeded } from './lib/managedChrome.js'
+import type { WaitUntil } from './lib/cdp.js'
+import {
+  planManagedChromeExecution,
+  type ManagedChromeOptions,
+  withManagedChromeIfNeeded,
+} from './lib/managedChrome.js'
 import { WEB_FETCH_TOOL_DESCRIPTION } from './web-fetch/prompt.js'
-import { fetchPageViaCdp, type FetchPageFormat } from './web-fetch/WebFetchTool.js'
+import {
+  fetchPageViaCdp,
+  previewFetchPage,
+  type FetchPageFormat,
+  type FetchPageInput,
+} from './web-fetch/WebFetchTool.js'
 
 const DEFAULT_PROGRAM_NAME = 'google-search-cdp-cli'
-const PROGRAM_ALIASES = new Set([
+const PROGRAM_NAMES = [
   'google-search-cdp-cli',
   'google-search-cdp',
   'google-cdp',
-])
+]
+const PROGRAM_ALIASES = new Set(PROGRAM_NAMES)
 
 function normalizeCommandName(rawValue: string): string {
   return rawValue.replace(/\.(cmd|ps1|exe)$/i, '')
@@ -49,6 +69,103 @@ function clamp(value: number, min: number, max: number): number {
 
 function printJson(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value, null, 2)}\n`)
+}
+
+function parseWaitUntil(value: unknown): WaitUntil {
+  return String(value) as WaitUntil
+}
+
+function buildManagedChromeOptions(
+  options: Record<string, unknown>,
+): ManagedChromeOptions {
+  return {
+    cdpUrl: String(options.cdpUrl),
+    timeoutMs: parseInteger(String(options.timeout), 'timeout'),
+    cloneChromeProfile: Boolean(options.cloneChromeProfile),
+    headless: Boolean(options.headless),
+    proxyServer: options.proxy ? String(options.proxy) : undefined,
+    chromeExecutablePath: options.chromeExecutablePath
+      ? String(options.chromeExecutablePath)
+      : undefined,
+    chromeUserDataDir: options.chromeUserDataDir ? String(options.chromeUserDataDir) : undefined,
+    keepTempChromeProfile: Boolean(options.keepTempChromeProfile),
+  }
+}
+
+function buildSearchExecutionInput(
+  commandOptions: Record<string, unknown>,
+  terms: string[],
+  rawQueryArgv: string[],
+): SearchGoogleInput {
+  return {
+    ...buildQueryInput(commandOptions, terms, rawQueryArgv),
+    cdpUrl: String(commandOptions.cdpUrl),
+    timeoutMs: parseInteger(String(commandOptions.timeout), 'timeout'),
+    waitUntil: parseWaitUntil(commandOptions.waitUntil),
+    num: clamp(parseInteger(String(commandOptions.num), 'num'), 1, 100),
+    start: Math.max(parseInteger(String(commandOptions.start), 'start'), 0),
+    hl: String(commandOptions.hl),
+    gl: String(commandOptions.gl),
+    safe: String(commandOptions.safe) === 'active' ? 'active' : 'off',
+    tbm: commandOptions.tbm ? String(commandOptions.tbm) : undefined,
+    personalize: Boolean(commandOptions.personalize),
+    verbatim: Boolean(commandOptions.verbatim),
+  }
+}
+
+function buildFetchExecutionInput(
+  url: string,
+  commandOptions: Record<string, unknown>,
+): FetchPageInput {
+  return {
+    url,
+    cdpUrl: String(commandOptions.cdpUrl),
+    timeoutMs: parseInteger(String(commandOptions.timeout), 'timeout'),
+    waitUntil: parseWaitUntil(commandOptions.waitUntil),
+    selector: commandOptions.selector ? String(commandOptions.selector) : undefined,
+    format: String(commandOptions.format) as FetchPageFormat,
+    maxLinks: clamp(parseInteger(String(commandOptions.maxLinks), 'max-links'), 0, 200),
+  }
+}
+
+function buildSearchDryRunOutput(
+  searchInput: SearchGoogleInput,
+  browserOptions: ManagedChromeOptions,
+): Record<string, unknown> {
+  const browserSession = planManagedChromeExecution(browserOptions)
+  const preview = previewSearchGoogle(searchInput)
+
+  return {
+    tool: 'search',
+    dryRun: true,
+    requestedAt: new Date().toISOString(),
+    cdpUrl: browserSession.cdpUrl,
+    browserSession,
+    request: preview.request,
+    query: preview.query,
+    searchUrl: preview.searchUrl,
+    warnings: preview.warnings,
+    notes: ['Dry run only. No Chrome session was started and no Google request was sent.'],
+  }
+}
+
+function buildFetchDryRunOutput(
+  fetchInput: FetchPageInput,
+  browserOptions: ManagedChromeOptions,
+): Record<string, unknown> {
+  const browserSession = planManagedChromeExecution(browserOptions)
+  const preview = previewFetchPage(fetchInput)
+
+  return {
+    tool: 'fetch',
+    dryRun: true,
+    requestedAt: new Date().toISOString(),
+    cdpUrl: browserSession.cdpUrl,
+    browserSession,
+    request: preview.request,
+    warnings: preview.warnings,
+    notes: ['Dry run only. No Chrome session was started and no page request was sent.'],
+  }
 }
 
 function addManagedChromeOptions(command: Command): Command {
@@ -146,12 +263,44 @@ program
 Common Workflows:
   ${programName} search ...        Build a Google query and run it through Chrome CDP
   ${programName} fetch <url>       Load a page through Chrome CDP and extract content
+  ${programName} install-completion zsh    Install zsh completion
 
 Start Here:
   ${programName} search --help
   ${programName} fetch --help
+  ${programName} install-completion zsh
 `,
   )
+
+program
+  .command('install-completion')
+  .argument('<shell>', 'shell name')
+  .description('Install shell completion for your current machine.')
+  .summary('Install shell completion')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  ${programName} install-completion zsh
+`,
+  )
+  .action(async (shell: string) => {
+    if (shell !== 'zsh') {
+      throw new Error(`Unsupported shell: ${shell}. Supported shells: zsh.`)
+    }
+
+    const result = await installZshCompletion(PROGRAM_NAMES)
+    process.stdout.write(
+      [
+        `Installed zsh completion: ${result.completionFile}`,
+        `Updated zsh rc: ${result.updatedZshrc ? 'yes' : 'no'} (${result.zshrcFile})`,
+        result.reusedExistingCompinit
+          ? 'Existing compinit setup detected in your zsh rc.'
+          : 'Added compinit setup to your zsh rc.',
+        'Next step: restart zsh or run `exec zsh`.',
+      ].join('\n') + '\n',
+    )
+  })
 
 addManagedChromeOptions(
   program
@@ -168,6 +317,10 @@ addManagedChromeOptions(
   .option('--tbm <vertical>', 'Google search vertical, e.g. nws, isch, vid')
   .option('--verbatim', 'Use Google verbatim mode')
   .option('--personalize', 'Enable personalized search (pws=1)')
+  .option(
+    '--dry-run',
+    'Print the compiled query and search URL without opening Chrome or sending the request',
+  )
   .optionsGroup('Query Terms:')
   .option('--exact <phrase>', 'Exact-match phrase', collect, [])
   .optionsGroup('Query Logic:')
@@ -236,43 +389,26 @@ Examples:
 
   Reuse your current Chrome login/cookies safely:
     ${programName} search llm agents --clone-chrome-profile --cdp-url http://127.0.0.1:9333 --site openai.com
+
+  Preview the compiled query only:
+    ${programName} search llm agents --site openai.com --filetype pdf --dry-run
 `,
   )
   .action(async (terms: string[], options: Record<string, unknown>, command: Command) => {
-    const timeoutMs = parseInteger(String(options.timeout), 'timeout')
-    const cdpUrl = String(options.cdpUrl)
+    const searchInput = buildSearchExecutionInput(options, terms, getSubcommandArgv(command))
+    const browserOptions = buildManagedChromeOptions(options)
+
+    if (options.dryRun) {
+      printJson(buildSearchDryRunOutput(searchInput, browserOptions))
+      return
+    }
 
     const result = await withManagedChromeIfNeeded(
-      {
-        cdpUrl,
-        timeoutMs,
-        cloneChromeProfile: Boolean(options.cloneChromeProfile),
-        headless: Boolean(options.headless),
-        proxyServer: options.proxy ? String(options.proxy) : undefined,
-        chromeExecutablePath: options.chromeExecutablePath
-          ? String(options.chromeExecutablePath)
-          : undefined,
-        chromeUserDataDir: options.chromeUserDataDir ? String(options.chromeUserDataDir) : undefined,
-        keepTempChromeProfile: Boolean(options.keepTempChromeProfile),
-      },
+      browserOptions,
       nextCdpUrl =>
         searchGoogleViaCdp({
-          ...buildQueryInput(options, terms, getSubcommandArgv(command)),
+          ...searchInput,
           cdpUrl: nextCdpUrl,
-          timeoutMs,
-          waitUntil: String(options.waitUntil) as
-            | 'load'
-            | 'domcontentloaded'
-            | 'networkidle0'
-            | 'networkidle2',
-          num: clamp(parseInteger(String(options.num), 'num'), 1, 100),
-          start: Math.max(parseInteger(String(options.start), 'start'), 0),
-          hl: String(options.hl),
-          gl: String(options.gl),
-          safe: String(options.safe) === 'active' ? 'active' : 'off',
-          tbm: options.tbm ? String(options.tbm) : undefined,
-          personalize: Boolean(options.personalize),
-          verbatim: Boolean(options.verbatim),
         }),
     )
     printJson(result)
@@ -289,6 +425,10 @@ addManagedChromeOptions(
   .option('--selector <css>', 'Optional CSS selector to scope extracted content')
   .option('--format <format>', 'markdown|text|html|all', 'markdown')
   .option('--max-links <count>', 'Maximum number of extracted links', '25')
+  .option(
+    '--dry-run',
+    'Print the normalized fetch request without opening Chrome or loading the page',
+  )
   .addHelpText(
     'after',
     `
@@ -296,43 +436,38 @@ Examples:
   ${programName} fetch https://example.com --format text
   ${programName} fetch https://developer.chrome.com/docs/devtools/ --selector main --format markdown
   ${programName} fetch https://example.com --clone-chrome-profile --cdp-url http://127.0.0.1:9333
+  ${programName} fetch https://example.com --format text --dry-run
 `,
   )
   .action(async (url: string, options: Record<string, unknown>) => {
-    const timeoutMs = parseInteger(String(options.timeout), 'timeout')
-    const cdpUrl = String(options.cdpUrl)
+    const fetchInput = buildFetchExecutionInput(url, options)
+    const browserOptions = buildManagedChromeOptions(options)
+
+    if (options.dryRun) {
+      printJson(buildFetchDryRunOutput(fetchInput, browserOptions))
+      return
+    }
 
     const result = await withManagedChromeIfNeeded(
-      {
-        cdpUrl,
-        timeoutMs,
-        cloneChromeProfile: Boolean(options.cloneChromeProfile),
-        headless: Boolean(options.headless),
-        proxyServer: options.proxy ? String(options.proxy) : undefined,
-        chromeExecutablePath: options.chromeExecutablePath
-          ? String(options.chromeExecutablePath)
-          : undefined,
-        chromeUserDataDir: options.chromeUserDataDir ? String(options.chromeUserDataDir) : undefined,
-        keepTempChromeProfile: Boolean(options.keepTempChromeProfile),
-      },
+      browserOptions,
       nextCdpUrl =>
         fetchPageViaCdp({
-          url,
+          ...fetchInput,
           cdpUrl: nextCdpUrl,
-          timeoutMs,
-          waitUntil: String(options.waitUntil) as
-            | 'load'
-            | 'domcontentloaded'
-            | 'networkidle0'
-            | 'networkidle2',
-          selector: options.selector ? String(options.selector) : undefined,
-          format: String(options.format) as FetchPageFormat,
-          maxLinks: clamp(parseInteger(String(options.maxLinks), 'max-links'), 0, 200),
         }),
     )
     printJson(result)
   }),
 )
+
+const rawArgs = process.argv.slice(2)
+if (rawArgs[0] === '__complete') {
+  const currentIndex = Math.max(parseInteger(rawArgs[1] ?? '1', 'completion index'), 1)
+  process.stdout.write(
+    formatCompletionResponse(resolveCompletion(program, currentIndex, rawArgs.slice(2))),
+  )
+  process.exit(0)
+}
 
 program.parseAsync(process.argv).catch(error => {
   process.stderr.write(

@@ -69,6 +69,22 @@ npm publish
 npm install -g google-search-cdp-cli
 ```
 
+## Shell 补全
+
+安装 zsh 补全：
+
+```sh
+google-search-cdp-cli install-completion zsh
+```
+
+这个命令会把补全脚本写到本地 zsh 补全目录，并以幂等方式更新 `~/.zshrc`。
+
+如果想立刻生效，可以执行：
+
+```sh
+exec zsh
+```
+
 ## 查询模型
 
 `search` 命令以 [docs/google-advanced-search-syntax-official.md](docs/google-advanced-search-syntax-official.md) 作为语法基准。
@@ -111,6 +127,17 @@ google-search-cdp-cli search llm agents \
 ```
 
 这会把当前 Chrome 的 `user-data-dir` 复制到临时目录，启动一个独立的本地 CDP Chrome，执行命令，然后默认清理临时 profile。`--headless` 和 `--proxy` 都只作用于这条托管启动路径。
+
+### 只预览搜索计划，不打开 Chrome
+
+```sh
+google-search-cdp-cli search llm agents \
+  --site openai.com \
+  --filetype pdf \
+  --dry-run
+```
+
+这会输出编译后的 query plan、最终 Google 搜索 URL，以及浏览器执行计划，但不会启动 Chrome，也不会真正发起 Google 请求。
 
 ### 通过参数组合括号和布尔逻辑
 
@@ -163,6 +190,14 @@ google-search-cdp-cli fetch https://developer.chrome.com/docs/devtools/ \
   --format markdown
 ```
 
+### 只预览抓取请求，不加载页面
+
+```sh
+google-search-cdp-cli fetch https://example.com \
+  --format text \
+  --dry-run
+```
+
 ### 开发模式
 
 ```sh
@@ -205,6 +240,7 @@ Search:
 - `--gl <country>`
 - `--safe <off|active>`
 - `--verbatim`
+- `--dry-run`
 - `--clone-chrome-profile`
 - `--headless` 仅作用于托管 Chrome，且必须配合 `--clone-chrome-profile`
 - `--proxy <server>` 仅作用于托管 Chrome，且必须配合 `--clone-chrome-profile`
@@ -216,6 +252,7 @@ Fetch:
 
 - `--selector <css>`
 - `--format <markdown|text|html|all>`
+- `--dry-run`
 - `--wait-until <load|domcontentloaded|networkidle0|networkidle2>`
 - `--timeout <ms>`
 - `--max-links <count>`

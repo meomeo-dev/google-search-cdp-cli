@@ -22,6 +22,18 @@ export type FetchPageInput = {
   maxLinks: number
 }
 
+export type FetchPagePreview = {
+  request: {
+    url: string
+    selector: string | null
+    format: FetchPageFormat
+    waitUntil: WaitUntil
+    timeoutMs: number
+    maxLinks: number
+  }
+  warnings: string[]
+}
+
 export type FetchPageOutput = {
   tool: 'fetch'
   requestedAt: string
@@ -99,12 +111,31 @@ function buildPagePayload(
   return page
 }
 
+export function previewFetchPage(
+  input: FetchPageInput,
+): FetchPagePreview {
+  const url = normalizeHttpUrl(input.url)
+  const format = normalizeFetchPageFormat(input.format)
+
+  return {
+    request: {
+      url,
+      selector: input.selector ?? null,
+      format,
+      waitUntil: input.waitUntil,
+      timeoutMs: input.timeoutMs,
+      maxLinks: input.maxLinks,
+    },
+    warnings: [],
+  }
+}
+
 export async function fetchPageViaCdp(
   input: FetchPageInput,
 ): Promise<FetchPageOutput> {
   const startedAt = Date.now()
-  const url = normalizeHttpUrl(input.url)
-  const format = normalizeFetchPageFormat(input.format)
+  const preview = previewFetchPage(input)
+  const format = preview.request.format
   const warnings: string[] = []
 
   const pageState = await withCdpPage(
@@ -113,7 +144,7 @@ export async function fetchPageViaCdp(
       timeoutMs: input.timeoutMs,
     },
     async ({ page, goto }) => {
-      const response = await goto(url, input.waitUntil)
+      const response = await goto(preview.request.url, input.waitUntil)
       await page.waitForSelector('body')
 
       const evaluated = await page.evaluate(
@@ -247,14 +278,7 @@ export async function fetchPageViaCdp(
     tool: 'fetch',
     requestedAt: new Date().toISOString(),
     cdpUrl: input.cdpUrl,
-    request: {
-      url,
-      selector: input.selector ?? null,
-      format,
-      waitUntil: input.waitUntil,
-      timeoutMs: input.timeoutMs,
-      maxLinks: input.maxLinks,
-    },
+    request: preview.request,
     response: {
       status: pageState.response?.status() ?? null,
       statusText: pageState.response?.statusText() ?? '',

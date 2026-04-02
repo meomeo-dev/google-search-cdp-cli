@@ -15,6 +15,24 @@ export type SearchGoogleInput = GoogleQueryInput & {
   verbatim: boolean
 }
 
+export type SearchGooglePreview = {
+  request: {
+    waitUntil: WaitUntil
+    timeoutMs: number
+    num: number
+    start: number
+    hl: string
+    gl: string
+    safe: 'off' | 'active'
+    tbm: string | null
+    personalize: boolean
+    verbatim: boolean
+  }
+  query: GoogleQueryPlan
+  searchUrl: string
+  warnings: string[]
+}
+
 export type GoogleSearchResult = {
   position: number
   title: string
@@ -71,17 +89,40 @@ function buildSearchUrl(plan: GoogleQueryPlan, input: SearchGoogleInput): string
   return url.toString()
 }
 
+export function previewSearchGoogle(input: SearchGoogleInput): SearchGooglePreview {
+  const query = buildGoogleQuery(input)
+  const searchUrl = buildSearchUrl(query, input)
+  const warnings: string[] = []
+
+  if ((query.src.length > 0 || query.imagesize.length > 0) && input.tbm !== 'isch') {
+    warnings.push('`src:` and `imagesize:` are image-search operators. Consider using `--tbm isch`.')
+  }
+
+  return {
+    request: {
+      waitUntil: input.waitUntil,
+      timeoutMs: input.timeoutMs,
+      num: input.num,
+      start: input.start,
+      hl: input.hl,
+      gl: input.gl,
+      safe: input.safe,
+      tbm: input.tbm ?? null,
+      personalize: input.personalize,
+      verbatim: input.verbatim,
+    },
+    query,
+    searchUrl,
+    warnings,
+  }
+}
+
 export async function searchGoogleViaCdp(
   input: SearchGoogleInput,
 ): Promise<SearchGoogleOutput> {
-  const plan = buildGoogleQuery(input)
-  const searchUrl = buildSearchUrl(plan, input)
+  const preview = previewSearchGoogle(input)
   const startedAt = Date.now()
-  const warnings: string[] = []
-
-  if ((plan.src.length > 0 || plan.imagesize.length > 0) && input.tbm !== 'isch') {
-    warnings.push('`src:` and `imagesize:` are image-search operators. Consider using `--tbm isch`.')
-  }
+  const warnings = [...preview.warnings]
 
   const pageState = await withCdpPage(
     {
@@ -89,7 +130,7 @@ export async function searchGoogleViaCdp(
       timeoutMs: input.timeoutMs,
     },
     async ({ page, goto }) => {
-      await goto(searchUrl, input.waitUntil)
+      await goto(preview.searchUrl, input.waitUntil)
       await page.waitForSelector('body')
 
       const evaluation = await page.evaluate((limit: number) => {
@@ -216,8 +257,8 @@ export async function searchGoogleViaCdp(
     tool: 'search',
     requestedAt: new Date().toISOString(),
     cdpUrl: input.cdpUrl,
-    query: plan,
-    searchUrl,
+    query: preview.query,
+    searchUrl: preview.searchUrl,
     finalUrl: pageState.finalUrl,
     pageTitle: pageState.pageTitle,
     stats: {

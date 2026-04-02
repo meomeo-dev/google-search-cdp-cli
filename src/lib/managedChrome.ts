@@ -15,11 +15,36 @@ export type ManagedChromeOptions = {
   keepTempChromeProfile: boolean
 }
 
-type LocalCdpTarget = {
+export type LocalCdpTarget = {
   host: string
   port: number
   browserUrl: string
 }
+
+export type ManagedChromeExecutionPlan =
+  | {
+      mode: 'existing'
+      cdpUrl: string
+      timeoutMs: number
+      cloneChromeProfile: false
+      headless: false
+      proxyServer: null
+      chromeExecutablePath: null
+      chromeUserDataDir: null
+      keepTempChromeProfile: boolean
+    }
+  | {
+      mode: 'managed'
+      cdpUrl: string
+      timeoutMs: number
+      cloneChromeProfile: true
+      headless: boolean
+      proxyServer: string | null
+      chromeExecutablePath: string | null
+      chromeUserDataDir: string | null
+      keepTempChromeProfile: boolean
+      cdpTarget: LocalCdpTarget
+    }
 
 const EXCLUDED_CHROME_PROFILE_NAMES = new Set([
   'BrowserMetrics',
@@ -183,38 +208,77 @@ export function buildManagedChromeLaunchArgs(options: {
   return args
 }
 
-export async function withManagedChromeIfNeeded<T>(
+function normalizeOptionalString(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed ? trimmed : undefined
+}
+
+export function planManagedChromeExecution(
   options: ManagedChromeOptions,
-  run: (cdpUrl: string) => Promise<T>,
-): Promise<T> {
+): ManagedChromeExecutionPlan {
+  const proxyServer = normalizeOptionalString(options.proxyServer)
+  const chromeExecutablePath = normalizeOptionalString(options.chromeExecutablePath)
+  const chromeUserDataDir = normalizeOptionalString(options.chromeUserDataDir)
+
   if (options.headless && !options.cloneChromeProfile) {
     throw new Error('`--headless` requires `--clone-chrome-profile`.')
   }
-  if (options.proxyServer && !options.cloneChromeProfile) {
+  if (proxyServer && !options.cloneChromeProfile) {
     throw new Error('`--proxy` requires `--clone-chrome-profile`.')
   }
 
   if (!options.cloneChromeProfile) {
-    return run(options.cdpUrl)
+    return {
+      mode: 'existing',
+      cdpUrl: options.cdpUrl,
+      timeoutMs: options.timeoutMs,
+      cloneChromeProfile: false,
+      headless: false,
+      proxyServer: null,
+      chromeExecutablePath: null,
+      chromeUserDataDir: null,
+      keepTempChromeProfile: options.keepTempChromeProfile,
+    }
   }
 
-  const sourceUserDataDir =
-    options.chromeUserDataDir ?? resolveDefaultChromeUserDataDir()
+  return {
+    mode: 'managed',
+    cdpUrl: options.cdpUrl,
+    timeoutMs: options.timeoutMs,
+    cloneChromeProfile: true,
+    headless: options.headless,
+    proxyServer: proxyServer ?? null,
+    chromeExecutablePath: chromeExecutablePath ?? resolveDefaultChromeExecutablePath() ?? null,
+    chromeUserDataDir: chromeUserDataDir ?? resolveDefaultChromeUserDataDir() ?? null,
+    keepTempChromeProfile: options.keepTempChromeProfile,
+    cdpTarget: parseLocalCdpUrl(options.cdpUrl),
+  }
+}
+
+export async function withManagedChromeIfNeeded<T>(
+  options: ManagedChromeOptions,
+  run: (cdpUrl: string) => Promise<T>,
+): Promise<T> {
+  const plan = planManagedChromeExecution(options)
+
+  if (plan.mode === 'existing') {
+    return run(plan.cdpUrl)
+  }
+
+  const sourceUserDataDir = plan.chromeUserDataDir
   if (!sourceUserDataDir) {
     throw new Error('Could not resolve the default Chrome user-data-dir. Pass --chrome-user-data-dir.')
   }
 
   await access(sourceUserDataDir)
 
-  const chromeExecutablePath =
-    options.chromeExecutablePath ?? resolveDefaultChromeExecutablePath()
+  const chromeExecutablePath = plan.chromeExecutablePath
   if (!chromeExecutablePath) {
     throw new Error(
       'Could not resolve the default Chrome executable. Pass --chrome-executable-path.',
     )
   }
 
-  const cdpTarget = parseLocalCdpUrl(options.cdpUrl)
   const tempRootDir = await mkdtemp(join(tmpdir(), 'google-search-cdp-cli-profile-'))
   const clonedUserDataDir = join(tempRootDir, 'User Data')
 
@@ -226,10 +290,10 @@ export async function withManagedChromeIfNeeded<T>(
   const chromeProcess = spawn(
     chromeExecutablePath,
     buildManagedChromeLaunchArgs({
-      port: cdpTarget.port,
+      port: plan.cdpTarget.port,
       userDataDir: clonedUserDataDir,
-      headless: options.headless,
-      proxyServer: options.proxyServer?.trim() || undefined,
+      headless: plan.headless,
+      proxyServer: plan.proxyServer ?? undefined,
     }),
     {
       stdio: 'ignore',
@@ -237,12 +301,12 @@ export async function withManagedChromeIfNeeded<T>(
   )
 
   try {
-    await waitForBrowserUrl(cdpTarget.browserUrl, options.timeoutMs)
-    return await run(options.cdpUrl)
+    await waitForBrowserUrl(plan.cdpTarget.browserUrl, plan.timeoutMs)
+    return await run(plan.cdpUrl)
   } finally {
     await terminateChromeProcess(chromeProcess).catch(() => {})
 
-    if (!options.keepTempChromeProfile) {
+    if (!plan.keepTempChromeProfile) {
       await rm(tempRootDir, {
         recursive: true,
         force: true,

@@ -69,6 +69,22 @@ After you publish the package to npm, the expected install command is:
 npm install -g google-search-cdp-cli
 ```
 
+## Shell Completion
+
+Install zsh completion:
+
+```sh
+google-search-cdp-cli install-completion zsh
+```
+
+This writes the completion script to your local zsh completion directory, updates `~/.zshrc` idempotently, and tells you to restart zsh.
+
+If you prefer to reload immediately:
+
+```sh
+exec zsh
+```
+
 ## Query Model
 
 The `search` command treats [docs/google-advanced-search-syntax-official.md](docs/google-advanced-search-syntax-official.md) as the syntax source of truth.
@@ -111,6 +127,17 @@ google-search-cdp-cli search llm agents \
 ```
 
 This clones your current Chrome user-data-dir into a temporary directory, launches a dedicated local CDP Chrome on the requested port, runs the command, then cleans up the temp profile. `--headless` and `--proxy` only apply to this managed Chrome launch path.
+
+### Preview a search without opening Chrome
+
+```sh
+google-search-cdp-cli search llm agents \
+  --site openai.com \
+  --filetype pdf \
+  --dry-run
+```
+
+This prints the compiled query plan, final Google search URL, and browser-session plan without opening Chrome or sending the Google request.
 
 ### Compose grouped boolean logic with flags
 
@@ -163,6 +190,14 @@ google-search-cdp-cli fetch https://developer.chrome.com/docs/devtools/ \
   --format markdown
 ```
 
+### Preview a fetch request without loading the page
+
+```sh
+google-search-cdp-cli fetch https://example.com \
+  --format text \
+  --dry-run
+```
+
 ### Development mode
 
 ```sh
@@ -205,6 +240,7 @@ Search:
 - `--gl <country>`
 - `--safe <off|active>`
 - `--verbatim`
+- `--dry-run`
 - `--clone-chrome-profile`
 - `--headless` managed Chrome only, requires `--clone-chrome-profile`
 - `--proxy <server>` managed Chrome only, requires `--clone-chrome-profile`
@@ -216,6 +252,7 @@ Fetch:
 
 - `--selector <css>`
 - `--format <markdown|text|html|all>`
+- `--dry-run`
 - `--wait-until <load|domcontentloaded|networkidle0|networkidle2>`
 - `--timeout <ms>`
 - `--max-links <count>`
