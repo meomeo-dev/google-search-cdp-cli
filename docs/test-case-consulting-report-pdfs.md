@@ -4,7 +4,7 @@
 
 ## 目标
 
-把下面这段查询后缀和站点范围，转换为 `google-cdp-cli` 的结构化 CLI 参数，并执行一次：
+把下面这段查询后缀和站点范围，转换为 `google-search-cdp-cli` 的结构化 CLI 参数，并执行一次：
 
 ```ts
 const DEFAULT_QUERY_SUFFIX =

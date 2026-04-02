@@ -1,8 +1,11 @@
-# google-cdp-cli
+# google-search-cdp-cli
 
 [English](README.md) | 简体中文
 
 一个基于本地 Chrome CDP 会话的 Google 搜索与网页抓取 CLI。
+
+主命令名是 `google-search-cdp`。
+为了兼容，包里也保留了 `google-cdp` 这个别名。
 
 ## 功能
 
@@ -30,7 +33,7 @@ http://127.0.0.1:9222
 ```sh
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
   --remote-debugging-port=9222 \
-  --user-data-dir="$HOME/.google-cdp-cli-profile"
+  --user-data-dir="$HOME/.google-search-cdp-cli-profile"
 ```
 
 ## 安装
@@ -42,7 +45,7 @@ http://127.0.0.1:9222
 ```sh
 npm install
 npm install -g .
-google-cdp --help
+google-search-cdp --help
 ```
 
 ### 开发阶段使用 `npm link`
@@ -50,7 +53,7 @@ google-cdp --help
 ```sh
 npm install
 npm link
-google-cdp --help
+google-search-cdp --help
 ```
 
 ### 面向发布的打包流程
@@ -63,7 +66,7 @@ npm publish
 发布到 npm 之后，预期安装方式是：
 
 ```sh
-npm install -g google-cdp-cli
+npm install -g google-search-cdp-cli
 ```
 
 ## 查询模型
@@ -86,7 +89,7 @@ CLI 会返回最终 query string、拼装 token，以及在使用兼容语法或
 ### 使用结构化参数搜索
 
 ```sh
-google-cdp search chrome devtools protocol \
+google-search-cdp search chrome devtools protocol \
   --exact "remote debugging" \
   --site developer.chrome.com \
   --site pptr.dev \
@@ -98,7 +101,7 @@ google-cdp search chrome devtools protocol \
 ### 安全复用当前 Chrome 的登录态和 cookies
 
 ```sh
-google-cdp search llm agents \
+google-search-cdp search llm agents \
   --clone-chrome-profile \
   --headless \
   --proxy socks5://127.0.0.1:1080 \
@@ -112,7 +115,7 @@ google-cdp search llm agents \
 ### 通过参数组合括号和布尔逻辑
 
 ```sh
-google-cdp search llm agents \
+google-search-cdp search llm agents \
   --group-start \
   --exact "context window" \
   --or-op \
@@ -127,7 +130,7 @@ google-cdp search llm agents \
 ### 使用次级官方 operator
 
 ```sh
-google-cdp search google search \
+google-search-cdp search google search \
   --allintitle "google search" \
   --allinurl "docs api" \
   --allintext "crawler indexing" \
@@ -137,7 +140,7 @@ google-cdp search google search \
 ### 使用 `--logic` 作为同一编译器的快捷写法
 
 ```sh
-google-cdp search llm agents \
+google-search-cdp search llm agents \
   --logic '("context window" | "long context") & !jobs' \
   --site openai.com
 ```
@@ -147,7 +150,7 @@ google-cdp search llm agents \
 ### 追加原始 Google 子句
 
 ```sh
-google-cdp search llm ranking \
+google-search-cdp search llm ranking \
   --raw "AROUND(3)" \
   --raw "\"eval benchmark\""
 ```
@@ -155,7 +158,7 @@ google-cdp search llm ranking \
 ### 通过 Chrome CDP 抓取页面
 
 ```sh
-google-cdp fetch https://developer.chrome.com/docs/devtools/ \
+google-search-cdp fetch https://developer.chrome.com/docs/devtools/ \
   --selector main \
   --format markdown
 ```
@@ -217,6 +220,8 @@ Fetch:
 - `--timeout <ms>`
 - `--max-links <count>`
 - `--clone-chrome-profile`
+- `--headless` 仅作用于托管 Chrome，且必须配合 `--clone-chrome-profile`
+- `--proxy <server>` 仅作用于托管 Chrome，且必须配合 `--clone-chrome-profile`
 - `--chrome-user-data-dir <dir>`
 - `--chrome-executable-path <path>`
 - `--keep-temp-chrome-profile`

@@ -112,7 +112,7 @@ function buildQueryInput(
 const program = new Command()
 
 program
-  .name('google-cdp')
+  .name('google-search-cdp')
   .description('Google advanced search and page fetch through a local Chrome CDP session.')
   .summary('Search Google or fetch pages through Chrome CDP')
   .showSuggestionAfterError()
@@ -121,12 +121,12 @@ program
     'after',
     `
 Common Workflows:
-  google-cdp search ...        Build a Google query and run it through Chrome CDP
-  google-cdp fetch <url>       Load a page through Chrome CDP and extract content
+  google-search-cdp search ...        Build a Google query and run it through Chrome CDP
+  google-search-cdp fetch <url>       Load a page through Chrome CDP and extract content
 
 Start Here:
-  google-cdp search --help
-  google-cdp fetch --help
+  google-search-cdp search --help
+  google-search-cdp fetch --help
 `,
   )
 
@@ -206,13 +206,13 @@ Recommended Model:
 
 Examples:
   Basic:
-    google-cdp search agent memory --site openai.com --filetype pdf
+    google-search-cdp search agent memory --site openai.com --filetype pdf
 
   Grouped OR across sites:
-    google-cdp search --group-start --site bain.com --or-op --site bcg.com --group-end --filetype pdf
+    google-search-cdp search --group-start --site bain.com --or-op --site bcg.com --group-end --filetype pdf
 
   Reuse your current Chrome login/cookies safely:
-    google-cdp search llm agents --clone-chrome-profile --cdp-url http://127.0.0.1:9333 --site openai.com
+    google-search-cdp search llm agents --clone-chrome-profile --cdp-url http://127.0.0.1:9333 --site openai.com
 `,
   )
   .action(async (terms: string[], options: Record<string, unknown>, command: Command) => {
@@ -270,9 +270,9 @@ addManagedChromeOptions(
     'after',
     `
 Examples:
-  google-cdp fetch https://example.com --format text
-  google-cdp fetch https://developer.chrome.com/docs/devtools/ --selector main --format markdown
-  google-cdp fetch https://example.com --clone-chrome-profile --cdp-url http://127.0.0.1:9333
+  google-search-cdp fetch https://example.com --format text
+  google-search-cdp fetch https://developer.chrome.com/docs/devtools/ --selector main --format markdown
+  google-search-cdp fetch https://example.com --clone-chrome-profile --cdp-url http://127.0.0.1:9333
 `,
   )
   .action(async (url: string, options: Record<string, unknown>) => {

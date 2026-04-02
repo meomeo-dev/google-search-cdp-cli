@@ -39,13 +39,13 @@ test('builds headless launch args for managed Chrome when requested', () => {
   assert.deepEqual(
     buildManagedChromeLaunchArgs({
       port: 9333,
-      userDataDir: '/tmp/google-cdp-cli-profile/User Data',
+      userDataDir: '/tmp/google-search-cdp-cli-profile/User Data',
       headless: true,
       proxyServer: undefined,
     }),
     [
       '--remote-debugging-port=9333',
-      '--user-data-dir=/tmp/google-cdp-cli-profile/User Data',
+      '--user-data-dir=/tmp/google-search-cdp-cli-profile/User Data',
       '--no-first-run',
       '--no-default-browser-check',
       '--headless=new',
@@ -58,13 +58,13 @@ test('builds proxy launch args for managed Chrome when requested', () => {
   assert.deepEqual(
     buildManagedChromeLaunchArgs({
       port: 9333,
-      userDataDir: '/tmp/google-cdp-cli-profile/User Data',
+      userDataDir: '/tmp/google-search-cdp-cli-profile/User Data',
       headless: false,
       proxyServer: 'socks5://127.0.0.1:1080',
     }),
     [
       '--remote-debugging-port=9333',
-      '--user-data-dir=/tmp/google-cdp-cli-profile/User Data',
+      '--user-data-dir=/tmp/google-search-cdp-cli-profile/User Data',
       '--no-first-run',
       '--no-default-browser-check',
       '--proxy-server=socks5://127.0.0.1:1080',

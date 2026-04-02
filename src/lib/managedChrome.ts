@@ -215,7 +215,7 @@ export async function withManagedChromeIfNeeded<T>(
   }
 
   const cdpTarget = parseLocalCdpUrl(options.cdpUrl)
-  const tempRootDir = await mkdtemp(join(tmpdir(), 'google-cdp-cli-profile-'))
+  const tempRootDir = await mkdtemp(join(tmpdir(), 'google-search-cdp-cli-profile-'))
   const clonedUserDataDir = join(tempRootDir, 'User Data')
 
   await cp(sourceUserDataDir, clonedUserDataDir, {
