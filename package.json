@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "type": "module",
   "description": "CLI for Google advanced search and page fetch through a local Chrome CDP session.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meomeo-dev/google-search-cdp-cli.git"
+  },
+  "homepage": "https://github.com/meomeo-dev/google-search-cdp-cli#readme",
+  "bugs": {
+    "url": "https://github.com/meomeo-dev/google-search-cdp-cli/issues"
+  },
   "bin": {
     "google-search-cdp": "dist/cli.js",
     "google-cdp": "dist/cli.js"
@@ -33,14 +42,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "commander": "latest",
-    "puppeteer-core": "latest",
-    "turndown": "latest"
+    "commander": "14.0.3",
+    "puppeteer-core": "24.40.0",
+    "turndown": "7.2.2"
   },
   "devDependencies": {
-    "@types/node": "latest",
-    "@types/turndown": "latest",
-    "tsx": "latest",
-    "typescript": "latest"
+    "@types/node": "25.5.0",
+    "@types/turndown": "5.0.6",
+    "tsx": "4.21.0",
+    "typescript": "6.0.2"
   }
 }
