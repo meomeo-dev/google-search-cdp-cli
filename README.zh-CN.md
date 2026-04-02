@@ -4,8 +4,8 @@
 
 一个基于本地 Chrome CDP 会话的 Google 搜索与网页抓取 CLI。
 
-主命令名是 `google-search-cdp`。
-为了兼容，包里也保留了 `google-cdp` 这个别名。
+主命令名是 `google-search-cdp-cli`。
+为了更短的输入和向后兼容，包里也保留了 `google-search-cdp` 和 `google-cdp` 这两个别名。
 
 ## 功能
 
@@ -45,7 +45,7 @@ http://127.0.0.1:9222
 ```sh
 npm install
 npm install -g .
-google-search-cdp --help
+google-search-cdp-cli --help
 ```
 
 ### 开发阶段使用 `npm link`
@@ -53,7 +53,7 @@ google-search-cdp --help
 ```sh
 npm install
 npm link
-google-search-cdp --help
+google-search-cdp-cli --help
 ```
 
 ### 面向发布的打包流程
@@ -89,7 +89,7 @@ CLI 会返回最终 query string、拼装 token，以及在使用兼容语法或
 ### 使用结构化参数搜索
 
 ```sh
-google-search-cdp search chrome devtools protocol \
+google-search-cdp-cli search chrome devtools protocol \
   --exact "remote debugging" \
   --site developer.chrome.com \
   --site pptr.dev \
@@ -101,7 +101,7 @@ google-search-cdp search chrome devtools protocol \
 ### 安全复用当前 Chrome 的登录态和 cookies
 
 ```sh
-google-search-cdp search llm agents \
+google-search-cdp-cli search llm agents \
   --clone-chrome-profile \
   --headless \
   --proxy socks5://127.0.0.1:1080 \
@@ -115,7 +115,7 @@ google-search-cdp search llm agents \
 ### 通过参数组合括号和布尔逻辑
 
 ```sh
-google-search-cdp search llm agents \
+google-search-cdp-cli search llm agents \
   --group-start \
   --exact "context window" \
   --or-op \
@@ -130,7 +130,7 @@ google-search-cdp search llm agents \
 ### 使用次级官方 operator
 
 ```sh
-google-search-cdp search google search \
+google-search-cdp-cli search google search \
   --allintitle "google search" \
   --allinurl "docs api" \
   --allintext "crawler indexing" \
@@ -140,7 +140,7 @@ google-search-cdp search google search \
 ### 使用 `--logic` 作为同一编译器的快捷写法
 
 ```sh
-google-search-cdp search llm agents \
+google-search-cdp-cli search llm agents \
   --logic '("context window" | "long context") & !jobs' \
   --site openai.com
 ```
@@ -150,7 +150,7 @@ google-search-cdp search llm agents \
 ### 追加原始 Google 子句
 
 ```sh
-google-search-cdp search llm ranking \
+google-search-cdp-cli search llm ranking \
   --raw "AROUND(3)" \
   --raw "\"eval benchmark\""
 ```
@@ -158,7 +158,7 @@ google-search-cdp search llm ranking \
 ### 通过 Chrome CDP 抓取页面
 
 ```sh
-google-search-cdp fetch https://developer.chrome.com/docs/devtools/ \
+google-search-cdp-cli fetch https://developer.chrome.com/docs/devtools/ \
   --selector main \
   --format markdown
 ```

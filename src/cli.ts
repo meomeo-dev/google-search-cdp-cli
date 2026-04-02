@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { basename } from 'node:path'
 import { Command, Option } from 'commander'
 import { searchGoogleViaCdp } from './google/search.js'
 import { hasStructuredQuerySyntax, parseStructuredQueryArgv } from './google/cliStructuredQuery.js'
@@ -7,6 +8,27 @@ import type { GoogleQueryInput } from './google/queryBuilder.js'
 import { withManagedChromeIfNeeded } from './lib/managedChrome.js'
 import { WEB_FETCH_TOOL_DESCRIPTION } from './web-fetch/prompt.js'
 import { fetchPageViaCdp, type FetchPageFormat } from './web-fetch/WebFetchTool.js'
+
+const DEFAULT_PROGRAM_NAME = 'google-search-cdp-cli'
+const PROGRAM_ALIASES = new Set([
+  'google-search-cdp-cli',
+  'google-search-cdp',
+  'google-cdp',
+])
+
+function normalizeCommandName(rawValue: string): string {
+  return rawValue.replace(/\.(cmd|ps1|exe)$/i, '')
+}
+
+function resolveProgramName(argv: string[] = process.argv): string {
+  const entrypoint = argv[1]
+  if (!entrypoint) {
+    return DEFAULT_PROGRAM_NAME
+  }
+
+  const candidate = normalizeCommandName(basename(entrypoint))
+  return PROGRAM_ALIASES.has(candidate) ? candidate : DEFAULT_PROGRAM_NAME
+}
 
 function collect(value: string, previous: string[]): string[] {
   previous.push(value)
@@ -109,10 +131,11 @@ function buildQueryInput(
   }
 }
 
+const programName = resolveProgramName()
 const program = new Command()
 
 program
-  .name('google-search-cdp')
+  .name(programName)
   .description('Google advanced search and page fetch through a local Chrome CDP session.')
   .summary('Search Google or fetch pages through Chrome CDP')
   .showSuggestionAfterError()
@@ -121,12 +144,12 @@ program
     'after',
     `
 Common Workflows:
-  google-search-cdp search ...        Build a Google query and run it through Chrome CDP
-  google-search-cdp fetch <url>       Load a page through Chrome CDP and extract content
+  ${programName} search ...        Build a Google query and run it through Chrome CDP
+  ${programName} fetch <url>       Load a page through Chrome CDP and extract content
 
 Start Here:
-  google-search-cdp search --help
-  google-search-cdp fetch --help
+  ${programName} search --help
+  ${programName} fetch --help
 `,
   )
 
@@ -206,13 +229,13 @@ Recommended Model:
 
 Examples:
   Basic:
-    google-search-cdp search agent memory --site openai.com --filetype pdf
+    ${programName} search agent memory --site openai.com --filetype pdf
 
   Grouped OR across sites:
-    google-search-cdp search --group-start --site bain.com --or-op --site bcg.com --group-end --filetype pdf
+    ${programName} search --group-start --site bain.com --or-op --site bcg.com --group-end --filetype pdf
 
   Reuse your current Chrome login/cookies safely:
-    google-search-cdp search llm agents --clone-chrome-profile --cdp-url http://127.0.0.1:9333 --site openai.com
+    ${programName} search llm agents --clone-chrome-profile --cdp-url http://127.0.0.1:9333 --site openai.com
 `,
   )
   .action(async (terms: string[], options: Record<string, unknown>, command: Command) => {
@@ -270,9 +293,9 @@ addManagedChromeOptions(
     'after',
     `
 Examples:
-  google-search-cdp fetch https://example.com --format text
-  google-search-cdp fetch https://developer.chrome.com/docs/devtools/ --selector main --format markdown
-  google-search-cdp fetch https://example.com --clone-chrome-profile --cdp-url http://127.0.0.1:9333
+  ${programName} fetch https://example.com --format text
+  ${programName} fetch https://developer.chrome.com/docs/devtools/ --selector main --format markdown
+  ${programName} fetch https://example.com --clone-chrome-profile --cdp-url http://127.0.0.1:9333
 `,
   )
   .action(async (url: string, options: Record<string, unknown>) => {

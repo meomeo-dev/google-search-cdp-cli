@@ -1,6 +1,6 @@
 {
   "name": "google-search-cdp-cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "CLI for Google advanced search and page fetch through a local Chrome CDP session.",
   "license": "MIT",
@@ -13,6 +13,7 @@
     "url": "https://github.com/meomeo-dev/google-search-cdp-cli/issues"
   },
   "bin": {
+    "google-search-cdp-cli": "dist/cli.js",
     "google-search-cdp": "dist/cli.js",
     "google-cdp": "dist/cli.js"
   },

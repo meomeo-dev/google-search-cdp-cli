@@ -20,7 +20,7 @@ test('top-level help is task-oriented', () => {
   const output = runCliHelp(['--help'])
 
   assert.match(output, /Common Workflows:/)
-  assert.match(output, /google-search-cdp search \.\.\./)
+  assert.match(output, /google-search-cdp-cli search \.\.\./)
   assert.match(output, /Start Here:/)
 })
 

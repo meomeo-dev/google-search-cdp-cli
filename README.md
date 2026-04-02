@@ -4,8 +4,8 @@ English | [简体中文](README.zh-CN.md)
 
 Google Search and page-fetch CLI built on top of a local Chrome CDP session.
 
-The primary installed command is `google-search-cdp`.
-For compatibility, the package also exposes `google-cdp`.
+The primary installed command is `google-search-cdp-cli`.
+For shorter typing and backward compatibility, the package also exposes `google-search-cdp` and `google-cdp`.
 
 ## What It Does
 
@@ -45,7 +45,7 @@ Example manual Chrome launch:
 ```sh
 npm install
 npm install -g .
-google-search-cdp --help
+google-search-cdp-cli --help
 ```
 
 ### Link during development
@@ -53,7 +53,7 @@ google-search-cdp --help
 ```sh
 npm install
 npm link
-google-search-cdp --help
+google-search-cdp-cli --help
 ```
 
 ### Publish-ready package flow
@@ -89,7 +89,7 @@ The CLI returns the final query string, the assembled tokens, and `query.notes` 
 ### Search with structured flags
 
 ```sh
-google-search-cdp search chrome devtools protocol \
+google-search-cdp-cli search chrome devtools protocol \
   --exact "remote debugging" \
   --site developer.chrome.com \
   --site pptr.dev \
@@ -101,7 +101,7 @@ google-search-cdp search chrome devtools protocol \
 ### Reuse your current Chrome login and cookies safely
 
 ```sh
-google-search-cdp search llm agents \
+google-search-cdp-cli search llm agents \
   --clone-chrome-profile \
   --headless \
   --proxy socks5://127.0.0.1:1080 \
@@ -115,7 +115,7 @@ This clones your current Chrome user-data-dir into a temporary directory, launch
 ### Compose grouped boolean logic with flags
 
 ```sh
-google-search-cdp search llm agents \
+google-search-cdp-cli search llm agents \
   --group-start \
   --exact "context window" \
   --or-op \
@@ -130,7 +130,7 @@ This compiles into grouped Google syntax using uppercase `OR`, implicit `AND`, a
 ### Use documented secondary operators
 
 ```sh
-google-search-cdp search google search \
+google-search-cdp-cli search google search \
   --allintitle "google search" \
   --allinurl "docs api" \
   --allintext "crawler indexing" \
@@ -140,7 +140,7 @@ google-search-cdp search google search \
 ### Use `--logic` as a shortcut over the same compiler
 
 ```sh
-google-search-cdp search llm agents \
+google-search-cdp-cli search llm agents \
   --logic '("context window" | "long context") & !jobs' \
   --site openai.com
 ```
@@ -150,7 +150,7 @@ google-search-cdp search llm agents \
 ### Append raw Google clauses
 
 ```sh
-google-search-cdp search llm ranking \
+google-search-cdp-cli search llm ranking \
   --raw "AROUND(3)" \
   --raw "\"eval benchmark\""
 ```
@@ -158,7 +158,7 @@ google-search-cdp search llm ranking \
 ### Fetch a page through Chrome CDP
 
 ```sh
-google-search-cdp fetch https://developer.chrome.com/docs/devtools/ \
+google-search-cdp-cli fetch https://developer.chrome.com/docs/devtools/ \
   --selector main \
   --format markdown
 ```
