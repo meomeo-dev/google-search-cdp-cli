@@ -4,8 +4,8 @@
   "type": "module",
   "description": "CLI for Google advanced search and page fetch through a local Chrome CDP session.",
   "bin": {
-    "google-search-cdp": "./dist/cli.js",
-    "google-cdp": "./dist/cli.js"
+    "google-search-cdp": "dist/cli.js",
+    "google-cdp": "dist/cli.js"
   },
   "files": [
     "dist",
