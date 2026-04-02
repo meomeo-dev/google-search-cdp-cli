@@ -1,0 +1,45 @@
+{
+  "name": "google-cdp-cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "CLI for Google advanced search and page fetch through a local Chrome CDP session.",
+  "bin": {
+    "google-cdp": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "README.zh-CN.md"
+  ],
+  "keywords": [
+    "google",
+    "search",
+    "cli",
+    "chrome",
+    "cdp",
+    "puppeteer"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "prepare": "npm run build",
+    "prepack": "npm run build",
+    "start": "node dist/cli.js",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "latest",
+    "puppeteer-core": "latest",
+    "turndown": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/turndown": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
+}
